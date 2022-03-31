@@ -57,10 +57,12 @@ public class RocketManager : MonoBehaviour {
     IEnumerator ParachuteDeploy(Engine thruster) {
         Rigidbody stage = thruster.rb;
         print($"{thruster.name} falling... {Mathf.Abs(stage.velocity.y)}");
-        yield return new WaitUntil(() =>  Mathf.Abs(stage.velocity.y) > 10);
+        yield return new WaitUntil(() =>  stage.velocity.y < 0);
         
         try {
-            thruster.parachute.Deploy(stage);
+            thruster.parachute.LandManeuver(stage);
+            thruster.SmoothDrag = false;
+            
         }
         catch (Exception e)
         {

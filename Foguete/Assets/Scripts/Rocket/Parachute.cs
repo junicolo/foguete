@@ -2,31 +2,87 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Parachute : MonoBehaviour {
     
-    private bool drag;
-    private Rigidbody stage;
+    [SerializeField] [Range(0.01f, 1)] private float rotSpeed = .2f;
+    public Vector3 stageRotationTarget;
+    private Quaternion groundDifference;
 
-    private void Start() {
-        gameObject.SetActive(false);
+    public float dragForce;
+    
+    private Rigidbody stage;
+    private Transform parent;
+
+    private bool maneuvering;
+    private bool deployed;
+    private bool openParachute;
+
+    private void Start()
+    {
+        parent = transform.parent;
     }
 
     private void Update() {
-        if (drag) {
+        if (openParachute) stage.drag = dragForce;
 
-            if (stage.velocity.y < -2f) {
-                stage.AddForceAtPosition( Vector3.up * 0.352f , Vector3.forward, ForceMode.Force);
-                    
-            }
+        if (maneuvering) {
+            var position = parent.position;
+            groundDifference = Quaternion.LookRotation((position - stageRotationTarget - position).normalized);
+            
+            parent.localRotation = Quaternion.Slerp(parent.rotation, groundDifference, rotSpeed);
+            
+            var angleDifference = Quaternion.Angle(parent.rotation, groundDifference);
+            if (!deployed && angleDifference < 5) {
+                StartCoroutine(Deploy());
+            }else if (angleDifference < 0) {
+                maneuvering = false;
+            }            
         }
     }
 
-    public void Deploy(Rigidbody stage) {
+    public void LandManeuver(Rigidbody stage) {
         gameObject.SetActive(true);
-        this.stage = stage;
-        
 
+        GetComponent<SkinnedMeshRenderer>().enabled = false;
+        this.stage = stage;
+        parent = transform.parent;
+        maneuvering = true;
     }
-    
+
+    IEnumerator Deploy () {
+        deployed = true;
+
+        Physics.Raycast(parent.position + Vector3.down * 3, Vector3.down, out RaycastHit hit);
+       // float distance = 1;
+       // if (hit.collider) {
+       //     distance = Vector3.Distance(parent.position, hit.point);
+       // }
+
+       // float diveTime = Mathf.InverseLerp(20, 2000, distance);
+       // diveTime = Mathf.Lerp(0, 60, diveTime);
+
+      // for (int i = 0; i < Mathf.CeilToInt(diveTime); i++) {
+      //     if (parent.position.y - (Math.Abs(stage.velocity.y) + diveTime * ) - distance <= 40) {
+      //         print($"({name}) alt: {parent.position.y} dis:{distance} Sf{parent.position.y - (Math.Abs(stage.velocity.y) + diveTime * 9.81f)} res: {distance - (parent.position.y - (Math.Abs(stage.velocity.y) + diveTime * 9.81f)) <= 20}");
+      //         diveTime /= 2;
+      //     }
+      //     else
+      //         break;
+      // }
+        
+       // print(name + " "+ diveTime + " " + distance + " " + hit.collider.name);
+        
+        yield return new WaitForSeconds(2);
+        GetComponent<SkinnedMeshRenderer>().enabled = true;
+        openParachute = true;
+        
+    }
+
+    public void OnDrawGizmos() {
+        var position = transform.parent.position;
+        position -= stageRotationTarget;
+        Gizmos.DrawCube( position, Vector3.one * .1f);
+    }
 }

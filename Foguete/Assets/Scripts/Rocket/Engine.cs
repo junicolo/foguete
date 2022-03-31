@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[ExecuteAlways]
 public class Engine : MonoBehaviour {
     /// <summary>
     /// Massa do Foguete: 9.81 N = ≈ 1 KG
@@ -18,14 +17,19 @@ public class Engine : MonoBehaviour {
     
     private RocketManager rocket;
     private bool smoothDrag;
+
+    public bool SmoothDrag {
+        set => smoothDrag = value;
+    }
     private bool burning;
     private float debugTime;
     private float oldt = 1;
     private Vector3 centerOfMass;
 
-    private void Start() {
+    private void Awake() {
         rb = (rocket = transform.parent.GetComponent<RocketManager>()).GetComponent<Rigidbody>();
         parachute = GetComponentInChildren<Parachute>();
+        parachute.gameObject.SetActive(false);
     }
 
     private void Update() {
