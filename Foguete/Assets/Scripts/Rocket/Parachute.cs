@@ -12,6 +12,8 @@ public class Parachute : MonoBehaviour {
 
     public float dragForce;
     
+    private Cloth parachuteCloth;
+    private Wind wind;
     private Rigidbody stage;
     private Transform parent;
 
@@ -19,21 +21,27 @@ public class Parachute : MonoBehaviour {
     private bool deployed;
     private bool openParachute;
 
-    private void Start()
-    {
+    private void Start() {
+        parachuteCloth = GetComponent<Cloth>();
+        wind = Wind._;
         parent = transform.parent;
     }
+    
+    
 
-    private void Update() {
-        if (openParachute) stage.drag = dragForce;
+    private void FixedUpdate() {
+        if (openParachute) {
+            stage.drag = dragForce;
+            parachuteCloth.externalAcceleration = wind.WindForce();
+        }
 
         if (maneuvering) {
-            var position = parent.position;
+            var position = stage.position;
             groundDifference = Quaternion.LookRotation((position - stageRotationTarget - position).normalized);
             
-            parent.localRotation = Quaternion.Slerp(parent.rotation, groundDifference, rotSpeed);
+            stage.rotation = Quaternion.Slerp(stage.rotation, groundDifference, rotSpeed);
             
-            var angleDifference = Quaternion.Angle(parent.rotation, groundDifference);
+            var angleDifference = Quaternion.Angle(stage.rotation, groundDifference);
             if (!deployed && angleDifference < 5) {
                 StartCoroutine(Deploy());
             }else if (angleDifference < 0) {
@@ -49,6 +57,7 @@ public class Parachute : MonoBehaviour {
         this.stage = stage;
         parent = transform.parent;
         maneuvering = true;
+        StartCoroutine(SmoothFlip());
     }
 
     IEnumerator Deploy () {
@@ -80,6 +89,18 @@ public class Parachute : MonoBehaviour {
         
     }
 
+    IEnumerator SmoothFlip() {
+        while (!deployed) {
+            stage.drag += 0.1f;
+            yield return new WaitForFixedUpdate();
+        }
+
+        while (stage.drag > 0) {
+            stage.drag -= 0.1f;
+            yield return new WaitForFixedUpdate();
+        }
+
+    }
     public void OnDrawGizmos() {
         var position = transform.parent.position;
         position -= stageRotationTarget;

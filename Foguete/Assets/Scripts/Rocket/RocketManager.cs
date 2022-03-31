@@ -13,7 +13,6 @@ public class RocketManager : MonoBehaviour {
 
     Dictionary<EngineID, Engine> engines = new Dictionary<EngineID, Engine>();
     [SerializeField] private TextMeshProUGUI uiRocketInfo;
-
     private bool liftoff;
     private Engine secEngine;
     Rigidbody rb;
@@ -22,10 +21,8 @@ public class RocketManager : MonoBehaviour {
         rb = GetComponent<Rigidbody>();
         Engine[] thrusters = GetComponentsInChildren<Engine>();
         
-        for (int i = 0; i < thrusters.Length; i++) {
-            Engine thruster = thrusters[i];
+        foreach (Engine thruster in thrusters)
             engines.Add(thruster.engineId, thruster);
-        }
     }
 
     public void Update() {
@@ -37,13 +34,9 @@ public class RocketManager : MonoBehaviour {
     }
 
     public void EngineCutoff(EngineID id) {
-        
-        if (id == EngineID.engine0) {
-            engines[id].StageSeparation();
-            StartCoroutine(SecStageIgnition());
-        } else {
-            print("Second Stage cutoff");            
-        }
+        engines[id].StageSeparation();
+
+        if (id == EngineID.engine0) StartCoroutine(SecStageIgnition());
 
         StartCoroutine(ParachuteDeploy(engines[id]));
     }
@@ -55,20 +48,9 @@ public class RocketManager : MonoBehaviour {
 
 
     IEnumerator ParachuteDeploy(Engine thruster) {
-        Rigidbody stage = thruster.rb;
-        print($"{thruster.name} falling... {Mathf.Abs(stage.velocity.y)}");
-        yield return new WaitUntil(() =>  stage.velocity.y < 0);
-        
-        try {
-            thruster.parachute.LandManeuver(stage);
-            thruster.SmoothDrag = false;
-            
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-
+        Rigidbody stage = thruster.GetRb;
+        yield return new WaitUntil(() =>  stage.velocity.y < 10);
+        thruster.SmoothDrag = false;
+        thruster.PrepareLand();
     }
 }
