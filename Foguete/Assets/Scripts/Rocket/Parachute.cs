@@ -1,14 +1,12 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class Parachute : MonoBehaviour {
     
-    [SerializeField] [Range(0.01f, 1)] private float rotSpeed = .2f;
-    public Vector3 stageRotationTarget;
-    public float dragForce;
+    [SerializeField] [Range(0.01f, 1)] private float rotSpeed = .2f; // velocidade que o foguete aponta para baixo
+    public Vector3 stageRotationTarget; // direção para qual lado o foguete deve apontar
+    public float dragForce; // força do paraquedas
 
     private Quaternion groundDifference;
     
@@ -32,13 +30,16 @@ public class Parachute : MonoBehaviour {
         }
 
         if (maneuvering) {
-            var position = stage.position;
-            groundDifference = Quaternion.LookRotation((position - stageRotationTarget - position).normalized);
-            stage.rotation = Quaternion.Slerp(stage.rotation, groundDifference, rotSpeed);
-            var angleDifference = Quaternion.Angle(stage.rotation, groundDifference);
             
-            if (!deployed && angleDifference < 5) {
-                StartCoroutine(Deploy());
+            var position = stage.position;
+            
+            groundDifference = Quaternion.LookRotation((position - stageRotationTarget - position).normalized);
+            stage.rotation = Quaternion.Slerp(stage.rotation, groundDifference, rotSpeed); // faz o estagio manobrar para apontar na direção certa 
+            
+            var angleDifference = Quaternion.Angle(stage.rotation, groundDifference); 
+
+            if (!deployed && angleDifference < 5) { 
+                StartCoroutine(Deploy()); // quando o foguete apontar para a direção certa ele abre o paraquedas
             } else if (angleDifference < 0) {
                 maneuvering = false;
             }            
@@ -50,10 +51,15 @@ public class Parachute : MonoBehaviour {
 
         GetComponent<SkinnedMeshRenderer>().enabled = false;
         this.stage = stage;
-        maneuvering = true;
+        
+        maneuvering = true; // começa a manobrar para abrir o paraquedas
         StartCoroutine(SmoothFlip());
     }
 
+    /// <summary>
+    /// Abre o paraquedas
+    /// </summary>
+    /// <returns></returns>
     IEnumerator Deploy () {
         deployed = true;
         yield return new WaitForSeconds(2);
@@ -62,7 +68,10 @@ public class Parachute : MonoBehaviour {
         SoundManager.PlaySound(Sound.Parachute, transform);
         openParachute = true;
     }
-
+    /// <summary>
+    /// Aplica uma suavização na queda durante à manobra
+    /// </summary>
+    /// <returns></returns>
     IEnumerator SmoothFlip() {
         while (!deployed) {
             stage.drag += 0.1f;

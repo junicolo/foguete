@@ -1,11 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using Random = UnityEngine.Random;
 using System.Linq;
-using UnityEngine.EventSystems; // used for Sum of array
+
 public class TerrainGenerator : MonoBehaviour{
     public Terrain sampleT;
     public Texture2D heightmap;

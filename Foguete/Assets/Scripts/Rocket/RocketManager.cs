@@ -1,10 +1,7 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Cinemachine;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public enum EngineID {
     engine0, engine1    
@@ -12,14 +9,16 @@ public enum EngineID {
 
 public class RocketManager : MonoBehaviour {
 
+    private bool liftoff;
+    
+    Rigidbody rb;
+    Dictionary<EngineID, Engine> engines = new Dictionary<EngineID, Engine>();
+    private Engine secEngine;
+
     [SerializeField] CinemachineFreeLook cam;
     [SerializeField] Transform camTarget;
     private Vector3 target;
     
-    Dictionary<EngineID, Engine> engines = new Dictionary<EngineID, Engine>();
-    private bool liftoff;
-    private Engine secEngine;
-    Rigidbody rb;
 
     private void Start() {
         rb = GetComponent<Rigidbody>();
@@ -29,6 +28,9 @@ public class RocketManager : MonoBehaviour {
             engines.Add(thruster.engineId, thruster);
     }
 
+    /// <summary>
+    /// Aguarda o comando para iniciar a propulsão do motor.
+    /// </summary>
     public void Update() {
         if (!liftoff && Input.GetKeyDown(KeyCode.Return)) {
             liftoff = true;
@@ -37,6 +39,10 @@ public class RocketManager : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Recebe a informação que um motor foi desligado.
+    /// </summary>
+    /// <param name="id">Identificador do motor desligado.</param>
     public void EngineCutoff(EngineID id) {
         engines[id].StageSeparation();
         if (id == EngineID.engine0) StartCoroutine(SecStageIgnition());
@@ -49,16 +55,20 @@ public class RocketManager : MonoBehaviour {
         cam.Follow = camTarget;
         cam.LookAt = camTarget;
         
-        
-        while (Vector3.Distance(camTarget.localPosition, target) > 1 ) { // transição suave para a camera acompanhar o segundo estagio.
+        while (Vector3.Distance(camTarget.localPosition, target) > 1 ) { // transição da camera para acompanhar o segundo estagio.
             camTarget.localPosition = Vector3.Lerp(camTarget.localPosition, target, 0.1f);
             yield return new WaitForEndOfFrame();
         }
-        yield return new WaitUntil(() => rb.velocity.y < 0);
+        
+        yield return new WaitUntil(() => rb.velocity.y < 0); // quando o foguete for começar a perder altitude, o motor do segundo estagio é acionado
         engines[EngineID.engine1].Ignition(2);
     }
 
-
+    /// <summary>
+    /// Começa as intruções para lançar o paraquedas do motor.
+    /// </summary>
+    /// <param name="thruster"></param>
+    /// <returns></returns>
     IEnumerator ParachuteDeploy(Engine thruster) {
         Rigidbody stage = thruster.GetRb;
         yield return new WaitUntil(() =>  stage.velocity.y < 10);
